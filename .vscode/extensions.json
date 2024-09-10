@@ -1,0 +1,9 @@
+{
+    "recommendations": [
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "rvest.vs-code-prettier-eslint",
+        "codezombiech.gitignore",
+        "christian-kohler.path-intellisense"
+    ]
+}

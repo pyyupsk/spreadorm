@@ -1,0 +1,19 @@
+{
+    "name": "example",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "start": "tsx --require dotenv/config src/index.ts"
+    },
+    "dependencies": {
+        "dotenv": "^16.4.5",
+        "spreadorm": "workspace:*"
+    },
+    "devDependencies": {
+        "@repo/eslint-config": "workspace:*",
+        "@repo/typescript-config": "workspace:*",
+        "@types/node": "^22.5.4",
+        "tsx": "^4.16.0",
+        "typescript": "^5.4.5"
+    }
+}

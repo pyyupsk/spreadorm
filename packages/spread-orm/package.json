@@ -1,0 +1,38 @@
+{
+    "name": "spreadorm",
+    "version": "1.1.2",
+    "type": "module",
+    "description": "",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/pyyupsk/spreadorm.git"
+    },
+    "homepage": "https://github.com/pyyupsk/spreadorm",
+    "bugs": "https://github.com/pyyupsk/spreadorm/issues",
+    "author": "pyyupsk <pyyupsk@proton.me>",
+    "license": "MIT",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs"
+        }
+    },
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "tsup",
+        "lint": "eslint src"
+    },
+    "dependencies": {
+        "papaparse": "^5.4.1"
+    },
+    "devDependencies": {
+        "@repo/eslint-config": "workspace:*",
+        "@repo/typescript-config": "workspace:*",
+        "@types/node": "^22.5.4",
+        "@types/papaparse": "^5.3.14",
+        "tsup": "^8.2.4",
+        "typescript": "^5.4.5"
+    }
+}

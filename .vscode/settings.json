@@ -1,7 +1,18 @@
 {
-  "eslint.workingDirectories": [
-    {
-      "mode": "auto"
-    }
-  ]
+    "eslint.workingDirectories": [
+        {
+            "mode": "auto"
+        }
+    ],
+    "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+    "editor.defaultFormatter": "rvest.vs-code-prettier-eslint",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit",
+        "source.organizeImports": "never"
+    },
+    "editor.trimAutoWhitespace": false,
+    "files.insertFinalNewline": true,
+    "files.eol": "\n",
+    "npm.packageManager": "pnpm"
 }

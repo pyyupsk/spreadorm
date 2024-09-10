@@ -20,7 +20,9 @@ const main = async () => {
     // where
     const where = await sheet.findMany({
         where: {
-            published: false,
+            published: {
+                eq: false,
+            },
         },
     });
     console.log(`Fetched ${where.length} rows:`, where);

@@ -1,15 +1,21 @@
 import { parse } from 'papaparse';
 
 interface SheetOptions<T> {
-    where?: Partial<T>;
+    where?: WhereClause<T>;
     select?: (keyof T)[];
-    orderBy?: {
-        key: keyof T;
-        order: 'asc' | 'desc';
-    };
+    orderBy?: OrderByClause<T>;
     limit?: number;
     offset?: number;
 }
+
+type WhereClause<T> = {
+    [K in keyof T]?: T[K] | { [op in 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte']?: T[K] };
+};
+
+type OrderByClause<T> = {
+    key: keyof T;
+    order: 'asc' | 'desc';
+};
 
 /**
  * SpreadORM class for interacting with Google Sheets as a simple ORM.
@@ -22,6 +28,8 @@ export class SpreadORM<T> {
     private cacheDuration: number = 5 * 60 * 1000; // 5 minutes
 
     constructor(sheetId: string, cacheDuration?: number) {
+        if (!sheetId) throw new Error('Sheet ID is required');
+
         this.sheetId = sheetId;
         if (cacheDuration) this.cacheDuration = cacheDuration;
     }
@@ -38,14 +46,27 @@ export class SpreadORM<T> {
 
         try {
             const response = await fetch(url);
-            const text = await response.text();
-            const { data } = parse(text, { header: true, dynamicTyping: true });
 
-            this.data = data as T[];
+            if (!response.ok) {
+                throw new Error(`Failed to fetch spreadsheet: ${response.statusText}`);
+            }
+
+            const text = await response.text();
+            const { data } = parse(text, {
+                header: true,
+                dynamicTyping: true,
+            });
+
+            this.data = data.filter((row: unknown) => {
+                return Object.values(row as Record<string, unknown>).some(
+                    (value: unknown) => value !== '',
+                );
+            }) as T[];
             this.lastFetchTime = now;
         } catch (error) {
-            console.error('Error fetching spreadsheet:', error);
             this.data = [];
+            console.error('Error fetching spreadsheet:', error);
+            throw error;
         }
     }
 
@@ -55,52 +76,76 @@ export class SpreadORM<T> {
      * @returns {Promise<T[]>} A promise that resolves to an array of matching rows.
      */
     async findMany(options?: SheetOptions<T>): Promise<T[]> {
-        await this.fetchData();
-        if (!this.data) return [];
+        try {
+            await this.fetchData();
+            if (!this.data) return [];
 
-        let result = this.data;
+            let result = this.data;
 
-        if (options?.where) {
-            const whereEntries = Object.entries(options.where) as [keyof T, T[keyof T]][];
-            result = result.filter((row) =>
-                whereEntries.every(([key, value]) => row[key] === value),
-            );
-        }
+            if (options?.where) {
+                const whereEntries = Object.entries(options.where) as [keyof T, T[keyof T]][];
+                result = result.filter((row) =>
+                    whereEntries.every(([key, value]) => {
+                        const rowValue = row[key];
+                        if (typeof value === 'object' && value !== null) {
+                            const { eq, ne, gt, gte, lt, lte } = value as {
+                                eq?: T[keyof T];
+                                ne?: T[keyof T];
+                                gt?: T[keyof T];
+                                gte?: T[keyof T];
+                                lt?: T[keyof T];
+                                lte?: T[keyof T];
+                            };
+                            if (eq !== undefined && rowValue !== eq) return false;
+                            if (ne !== undefined && rowValue !== ne) return false;
+                            if (gt !== undefined && rowValue !== gt) return false;
+                            if (gte !== undefined && rowValue !== gte) return false;
+                            if (lt !== undefined && rowValue !== lt) return false;
+                            if (lte !== undefined && rowValue !== lte) return false;
+                        }
+                        return true;
+                    }),
+                );
+            }
 
-        if (options?.orderBy) {
-            const { key, order } = options.orderBy;
-            result.sort((a, b) => {
-                const aValue = a[key],
-                    bValue = b[key];
-                return order === 'asc'
-                    ? aValue < bValue
-                        ? -1
+            if (options?.orderBy) {
+                const { key, order } = options.orderBy;
+                result.sort((a, b) => {
+                    const aValue = a[key],
+                        bValue = b[key];
+                    return order === 'asc'
+                        ? aValue < bValue
+                            ? -1
+                            : aValue > bValue
+                              ? 1
+                              : 0
                         : aValue > bValue
-                          ? 1
-                          : 0
-                    : aValue > bValue
-                      ? -1
-                      : aValue < bValue
-                        ? 1
-                        : 0;
-            });
+                          ? -1
+                          : aValue < bValue
+                            ? 1
+                            : 0;
+                });
+            }
+
+            if (options?.offset) result = result.slice(options.offset);
+            if (options?.limit) result = result.slice(0, options.limit);
+
+            if (options?.select) {
+                const selectedKeys = options.select;
+                return result.map((row) => {
+                    const newRow: Partial<T> = {};
+                    for (const key of selectedKeys) {
+                        newRow[key] = row[key];
+                    }
+                    return newRow as T;
+                });
+            }
+
+            return result;
+        } catch (error) {
+            console.error('Error in findMany:', error);
+            throw error;
         }
-
-        if (options?.offset) result = result.slice(options.offset);
-        if (options?.limit) result = result.slice(0, options.limit);
-
-        if (options?.select) {
-            const selectedKeys = options.select;
-            return result.map((row) => {
-                const newRow: Partial<T> = {};
-                for (const key of selectedKeys) {
-                    newRow[key] = row[key];
-                }
-                return newRow as T;
-            });
-        }
-
-        return result;
     }
 
     /**

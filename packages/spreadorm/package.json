@@ -24,6 +24,9 @@
         "build": "tsup",
         "lint": "eslint src"
     },
+    "peerDependencies": {
+        "typescript": ">=4.1.0"
+    },
     "dependencies": {
         "papaparse": "^5.4.1"
     },

@@ -1,5 +1,6 @@
 {
     "name": "spreadorm",
+    "version": "1.0.0",
     "private": true,
     "packageManager": "pnpm@8.15.6",
     "engines": {
@@ -14,6 +15,7 @@
         "test": "pnpm test --filter=tests"
     },
     "devDependencies": {
+        "@changesets/cli": "^2.27.8",
         "knip": "^5.30.1",
         "prettier": "^3.3.3",
         "prettier-plugin-pkg": "^0.18.1",

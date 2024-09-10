@@ -1,0 +1,51 @@
+name: 🚀 Publish Release
+on:
+  workflow_run:
+    workflows: ['⚙️ CI']
+    branches:
+      - main
+    types:
+      - completed
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  publish:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        name: ⬇️ Checkout repository
+      - uses: pnpm/action-setup@v4
+        name: 🛠️ Setup pnpm
+        with:
+          version: 9.9.0
+      - uses: actions/setup-node@v4
+        name: 📦 Setup Node.js
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: 🔍 Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: 🏗 Build project
+        run: pnpm build --filter=spreadorm
+      - name: 📋 Copy files
+        run: |
+          cp CONTRIBUTING.md packages/spreadorm/
+          cp LICENSE packages/spreadorm/
+          cp README.md packages/spreadorm/
+      - name: 🚀 Publish release
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          publish: pnpm release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -2,7 +2,7 @@
     "name": "spreadorm",
     "version": "1.0.0",
     "type": "module",
-    "description": "",
+    "description": "🪄 SpreadORM: TypeScript ORM for Google Sheets (like magic!) ✨ Effortlessly manage your spreadsheet data with ease.",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/pyyupsk/spreadorm.git"

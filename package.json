@@ -12,7 +12,7 @@
         "lint": "prettier --check . && turbo lint",
         "release": "pnpm changeset publish --filter=spreadorm",
         "start": "turbo start",
-        "test": "pnpm test --filter=tests"
+        "test": "pnpm test --filter=@repo/tests"
     },
     "devDependencies": {
         "@changesets/cli": "^2.27.8",

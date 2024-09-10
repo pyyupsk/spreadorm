@@ -26,4 +26,4 @@ jobs:
       - name: 🏗️ Build
         run: pnpm build --filter=spreadorm
       - name: 🧪 Test
-        run: pnpm test --filter=tests
+        run: pnpm test

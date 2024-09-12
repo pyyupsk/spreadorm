@@ -8,11 +8,11 @@ Welcome to **SpreadORM**! 🎉 A lightweight **Object-Relational Mapper (ORM)** 
 
 ## 🚀 Key Features
 
--   **Simple Integration** with Google Sheets via sheet ID
--   **Flexible Queries**: Support for filtering, selecting, ordering, and limiting
--   **Find Methods**: Fetch data by unique, first, last, or multiple rows
--   **Caching**: Built-in caching for efficient data access
--   **TypeScript Support**: Enforce strong typing with generics
+- **Simple Integration** with Google Sheets via sheet ID
+- **Flexible Queries**: Support for filtering, selecting, ordering, and limiting
+- **Find Methods**: Fetch data by unique, first, last, or multiple rows
+- **Caching**: Built-in caching for efficient data access
+- **TypeScript Support**: Enforce strong typing with generics
 
 ## 🛠️ Installation
 
@@ -43,9 +43,9 @@ const orm = new SpreadORM<MyDataType>(sheetId);
 
 ```typescript
 const users = await orm.findMany({
-    where: { role: 'admin' },
-    orderBy: { key: 'createdAt', order: 'asc' },
-    limit: 10,
+  where: { role: 'admin' },
+  orderBy: { key: 'createdAt', order: 'asc' },
+  limit: 10,
 });
 ```
 
@@ -53,7 +53,7 @@ const users = await orm.findMany({
 
 ```typescript
 const user = await orm.findUnique({
-    where: { id: '123' },
+  where: { id: '123' },
 });
 ```
 
@@ -61,7 +61,7 @@ const user = await orm.findUnique({
 
 ```typescript
 const totalUsers = await orm.count({
-    where: { active: true },
+  where: { active: true },
 });
 ```
 
@@ -79,13 +79,17 @@ SpreadORM supports flexible data models, and you can customize it to fit any Goo
 
 ```typescript
 interface User {
-    id: string;
-    name: string;
-    role: string;
-    createdAt: string;
-    active: boolean;
+  id: string;
+  name: string;
+  role: string;
+  createdAt: string;
+  active: boolean;
 }
 ```
+
+## 📚 Documentation
+
+For detailed documentation and advanced usage examples, please visit our [SpreadORM Wiki](https://github.com/pyyupsk/spreadorm/wiki/SpreadORM-Wiki).
 
 ## 📄 Methods Overview
 
@@ -93,29 +97,29 @@ Here’s an overview of the primary methods available in SpreadORM:
 
 ### `findMany(options?: SheetOptions<T>)`
 
--   Fetch multiple rows based on query options.
--   Supports filtering (`where`), ordering, pagination (`limit`, `offset`), and selecting specific columns.
+- Fetch multiple rows based on query options.
+- Supports filtering (`where`), ordering, pagination (`limit`, `offset`), and selecting specific columns.
 
 ### `findUnique(options?: SheetOptions<T>)`
 
--   Retrieve a single unique row.
--   Throws an error if multiple results are found.
+- Retrieve a single unique row.
+- Throws an error if multiple results are found.
 
 ### `findFirst(options?: SheetOptions<T>)`
 
--   Get the first row that matches the query options.
+- Get the first row that matches the query options.
 
 ### `findLast(options?: SheetOptions<T>)`
 
--   Fetch the last row that matches the query options.
+- Fetch the last row that matches the query options.
 
 ### `count(options?: SheetOptions<T>)`
 
--   Count the number of rows that match the query options.
+- Count the number of rows that match the query options.
 
 ### `reset()`
 
--   Reset the internal cache.
+- Reset the internal cache.
 
 ## 🤝 Contributing
 

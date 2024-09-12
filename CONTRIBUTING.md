@@ -17,23 +17,23 @@ By participating in this project, you are expected to uphold our Code of Conduct
 ## Development Setup
 
 1. Clone the repository:
-    ```bash
-    git clone https://github.com/pyyupsk/spreadorm.git
-    ```
+   ```bash
+   git clone https://github.com/pyyupsk/spreadorm.git
+   ```
 2. Install dependencies:
-    ```bash
-    npm install
-    ```
+   ```bash
+   npm install
+   ```
 3. Build the project:
-    ```bash
-    npm run build
-    ```
+   ```bash
+   npm run build
+   ```
 
 ## Coding Standards
 
--   We use ESLint for linting. Run `npm run lint` to check your code.
--   We use Prettier for code formatting. Run `npm run format` to format your code.
--   Write clear, readable, and well-documented code.
+- We use ESLint for linting. Run `npm run lint` to check your code.
+- We use Prettier for code formatting. Run `npm run format` to format your code.
+- Write clear, readable, and well-documented code.
 
 ## Commit Messages
 
@@ -41,13 +41,13 @@ Follow the [Conventional Commits](https://www.conventionalcommits.org/) specific
 
 ## Testing
 
--   Write tests for new features and bug fixes.
--   Ensure all tests pass before submitting a pull request.
+- Write tests for new features and bug fixes.
+- Ensure all tests pass before submitting a pull request.
 
 ## Documentation
 
--   Update the README.md if you change functionality.
--   Comment your code where necessary.
+- Update the README.md if you change functionality.
+- Comment your code where necessary.
 
 ## Pull Request Process
 

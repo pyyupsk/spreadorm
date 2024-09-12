@@ -1,6 +1,6 @@
 {
     "name": "spreadorm",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "type": "module",
     "description": "🪄 SpreadORM: TypeScript ORM for Google Sheets (like magic!) ✨ Effortlessly manage your spreadsheet data with ease.",
     "repository": {
@@ -20,6 +20,16 @@
         }
     },
     "types": "dist/index.d.ts",
+    "keywords": [
+        "spreadsheet",
+        "orm",
+        "google-sheets",
+        "typescript",
+        "spreadsheet-api",
+        "sheets",
+        "google",
+        "spreadsheet-operations"
+    ],
     "scripts": {
         "build": "tsup",
         "lint": "eslint src"

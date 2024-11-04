@@ -1,6 +1,6 @@
 import { parse } from 'papaparse';
 
-import type { SheetOptions } from './types';
+import type { SheetOptions, ParseOptions } from './types';
 
 import { applyWhere, applyOrderBy, applySelectLimitOffset } from './utils';
 
@@ -13,18 +13,32 @@ export class SpreadORM<T> {
     private data: T[] | null = null;
     private lastFetchTime: number = 0;
     private cacheDuration: number = 5 * 60 * 1000; // 5 minutes
+    private parseOptions: ParseOptions;
 
     /**
      * Creates a new SpreadORM instance.
      * @param {string} sheetId - The ID of the Google Sheet.
-     * @param {number} [cacheDuration] - The duration for which the data is cached, in milliseconds. Defaults to 5 minutes.
-     * @throws {Error} If the sheet ID is not provided.
+     * @param {Object} options - Configuration options
+     * @param {number} [options.cacheDuration] - Cache duration in milliseconds
+     * @param {ParseOptions} [options.parseOptions] - CSV parsing options
      */
-    constructor(sheetId: string, cacheDuration?: number) {
+    constructor(
+        sheetId: string,
+        options?: {
+            cacheDuration?: number;
+            parseOptions?: ParseOptions;
+        },
+    ) {
         if (!sheetId) throw new Error('Sheet ID is required');
 
         this.sheetId = sheetId;
-        if (cacheDuration) this.cacheDuration = cacheDuration;
+        if (options?.cacheDuration) this.cacheDuration = options.cacheDuration;
+
+        this.parseOptions = {
+            skipEmptyLines: true,
+            transformHeader: (header: string) => header.trim(),
+            ...options?.parseOptions,
+        };
     }
 
     private async fetchData(): Promise<void> {
@@ -44,16 +58,26 @@ export class SpreadORM<T> {
             const { data } = parse(text, {
                 header: true,
                 dynamicTyping: true,
+                skipEmptyLines: this.parseOptions.skipEmptyLines,
+                transformHeader: this.parseOptions.transformHeader,
+                delimiter: this.parseOptions.delimiter,
             });
 
-            this.data = data.filter((row: unknown) => {
-                return Object.values(row as Record<string, unknown>).some(
-                    (value: unknown) => value !== '',
-                );
+            // Remove empty columns (columns with empty headers)
+            const cleanData = data.map((row) => {
+                const cleanRow: Record<string, unknown> = {};
+                Object.entries(row as Record<string, unknown>).forEach(([key, value]) => {
+                    if (key.trim() !== '') {
+                        cleanRow[key] = value;
+                    }
+                });
+                return cleanRow;
             }) as T[];
+
+            this.data = cleanData;
             this.lastFetchTime = now;
         } catch (error) {
-            this.data = [];
+            this.data = null;
             console.error('Error fetching spreadsheet:', error);
             throw error;
         }

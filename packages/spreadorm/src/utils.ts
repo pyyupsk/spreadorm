@@ -1,4 +1,4 @@
-import type { WhereClause, OrderByClause } from './types';
+import type { WhereClause, OrderByClause, WhereOperators } from './types';
 
 /**
  * Applies the where clause to the data.
@@ -10,24 +10,47 @@ export function applyWhere<T>(data: T[], where?: WhereClause<T>): T[] {
     if (!where) return data;
 
     return data.filter((row) =>
-        Object.entries(where).every(([key, value]) => {
+        Object.entries(where).every(([key, condition]) => {
             const rowValue = row[key as keyof T];
-            if (typeof value === 'object' && value !== null) {
-                const { eq, ne, gt, gte, lt, lte } = value as {
-                    eq?: T[keyof T];
-                    ne?: T[keyof T];
-                    gt?: T[keyof T];
-                    gte?: T[keyof T];
-                    lt?: T[keyof T];
-                    lte?: T[keyof T];
-                };
+
+            if (typeof condition === 'object' && condition !== null) {
+                const {
+                    eq,
+                    ne,
+                    gt,
+                    gte,
+                    lt,
+                    lte,
+                    contains,
+                    startsWith,
+                    endsWith,
+                    in: inArray,
+                    notIn,
+                } = condition as WhereOperators<T>;
+
                 if (eq !== undefined && rowValue !== eq) return false;
                 if (ne !== undefined && rowValue === ne) return false;
                 if (gt !== undefined && gt !== null && rowValue <= gt) return false;
                 if (gte !== undefined && gte !== null && rowValue < gte) return false;
                 if (lt !== undefined && lt !== null && rowValue >= lt) return false;
                 if (lte !== undefined && lte !== null && rowValue > lte) return false;
-            } else if (rowValue !== value) {
+
+                if (contains !== undefined && typeof rowValue === 'string') {
+                    return rowValue.includes(contains);
+                }
+                if (startsWith !== undefined && typeof rowValue === 'string') {
+                    return rowValue.startsWith(startsWith);
+                }
+                if (endsWith !== undefined && typeof rowValue === 'string') {
+                    return rowValue.endsWith(endsWith);
+                }
+                if (inArray !== undefined) {
+                    return (inArray as T[]).includes(rowValue as T);
+                }
+                if (notIn !== undefined) {
+                    return !(notIn as T[]).includes(rowValue as T);
+                }
+            } else if (rowValue !== condition) {
                 return false;
             }
             return true;
@@ -41,24 +64,25 @@ export function applyWhere<T>(data: T[], where?: WhereClause<T>): T[] {
  * @param {OrderByClause<T>} [orderBy] - The order by clause to apply.
  * @returns {T[]} The sorted data.
  */
-export function applyOrderBy<T>(data: T[], orderBy?: OrderByClause<T>): T[] {
+export function applyOrderBy<T>(data: T[], orderBy?: OrderByClause<T> | OrderByClause<T>[]): T[] {
     if (!orderBy) return data;
 
-    const { key, order } = orderBy;
+    const orderByArray = Array.isArray(orderBy) ? orderBy : [orderBy];
+
     return [...data].sort((a, b) => {
-        const aValue = a[key],
-            bValue = b[key];
-        return order === 'asc'
-            ? aValue < bValue
-                ? -1
-                : aValue > bValue
-                  ? 1
-                  : 0
-            : aValue > bValue
-              ? -1
-              : aValue < bValue
-                ? 1
-                : 0;
+        for (const { key, order } of orderByArray) {
+            const aValue = a[key];
+            const bValue = b[key];
+
+            if (aValue === bValue) continue;
+
+            if (order === 'asc') {
+                return aValue < bValue ? -1 : 1;
+            } else {
+                return aValue > bValue ? -1 : 1;
+            }
+        }
+        return 0;
     });
 }
 

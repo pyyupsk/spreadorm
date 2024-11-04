@@ -43,4 +43,63 @@ describe('SpreadORM', () => {
         const count = await orm.count({ where: { name: { ne: 'unknown' } } });
         expect(count).toBe(2);
     });
+
+    it('should handle complex where conditions', async () => {
+        const results = await orm.findMany({
+            where: {
+                name: { in: ['Alice', 'Bob'] },
+            },
+        });
+        expect(results).toEqual([
+            { id: 1, name: 'Alice' },
+            { id: 2, name: 'Bob' },
+        ]);
+    });
+
+    it('should handle orderBy with findMany', async () => {
+        const results = await orm.findMany({
+            orderBy: { key: 'name', order: 'desc' },
+        });
+        expect(results).toEqual([
+            { id: 2, name: 'Bob' },
+            { id: 1, name: 'Alice' },
+        ]);
+    });
+
+    it('should handle select fields', async () => {
+        const results = await orm.findMany({
+            select: ['name'],
+        });
+        expect(results).toEqual([{ name: 'Alice' }, { name: 'Bob' }]);
+    });
+
+    it('should handle pagination', async () => {
+        const results = await orm.findMany({
+            limit: 1,
+            offset: 1,
+        });
+        expect(results).toEqual([{ id: 2, name: 'Bob' }]);
+    });
+
+    it('should handle combined query options', async () => {
+        const results = await orm.findMany({
+            where: { name: { ne: 'unknown' } },
+            orderBy: { key: 'name', order: 'asc' },
+            select: ['name'],
+            limit: 1,
+        });
+        expect(results).toEqual([{ name: 'Alice' }]);
+    });
+
+    it('should throw error when sheet ID is invalid', async () => {
+        const invalidOrm = new SpreadORM('invalid-id');
+        vi.spyOn(global, 'fetch').mockResolvedValueOnce({
+            ok: false,
+            statusText: 'Not Found',
+        } as Response);
+
+        await expect(invalidOrm.findMany({})).rejects.toThrow(
+            'Failed to fetch spreadsheet: Not Found',
+        );
+    });
 });

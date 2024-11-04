@@ -1,98 +1,135 @@
-import { OrderByClause, SheetOptions } from 'spreadorm';
 import { applyWhere, applyOrderBy, applySelectLimitOffset } from '../spreadorm/src/utils';
 import { describe, it, expect } from 'vitest';
 
-describe('applyWhere', () => {
-    it('should filter data based on simple equality', () => {
-        const data = [
-            { id: 1, name: 'Alice' },
-            { id: 2, name: 'Bob' },
-        ];
-        const where = { id: { eq: 1 } };
-        expect(applyWhere(data, where)).toEqual([{ id: 1, name: 'Alice' }]);
-    });
+type TestData = {
+    id: number;
+    name: string;
+    age: number;
+    email: string;
+};
 
-    it('should error');
-
-    it('should handle complex conditions', () => {
-        const data = [
-            { id: 1, age: 30 },
-            { id: 2, age: 20 },
-        ];
-        const where = { age: { gt: 25 } };
-        expect(applyWhere(data, where)).toEqual([{ id: 1, age: 30 }]);
-    });
-
-    it('should return empty array if no matches', () => {
-        const data = [{ id: 1 }];
-        const where = { id: { eq: 2 } };
-        expect(applyWhere(data, where)).toEqual([]);
-    });
-
-    it('should handle multiple conditions', () => {
-        const data = [
-            { id: 1, age: 20 },
-            { id: 2, age: 30 },
-            { id: 1, age: 30 },
-        ];
-        const where = { id: { eq: 1 }, age: { eq: 30 } };
-        expect(applyWhere(data, where)).toEqual([{ id: 1, age: 30 }]);
-    });
-});
-
-describe('applyOrderBy', () => {
-    it('should sort data ascending', () => {
-        const data = [{ id: 2 }, { id: 1 }];
-        const orderBy: OrderByClause<{ id: number }> = { key: 'id', order: 'asc' };
-        expect(applyOrderBy(data, orderBy)).toEqual([{ id: 1 }, { id: 2 }]);
-    });
-
-    it('should sort data descending', () => {
-        const data = [{ id: 1 }, { id: 2 }];
-        const orderBy: OrderByClause<{ id: number }> = { key: 'id', order: 'desc' };
-        expect(applyOrderBy(data, orderBy)).toEqual([{ id: 2 }, { id: 1 }]);
-    });
-
-    it('should return original data if orderBy not provided', () => {
-        const data = [{ id: 1 }];
-        expect(applyOrderBy(data)).toEqual([{ id: 1 }]);
-    });
-});
-
-describe('applySelectLimitOffset', () => {
-    const data = [
-        { id: 1, name: 'Alice' },
-        { id: 2, name: 'Bob' },
-        { id: 3, name: 'Charlie' },
+describe('SpreadORM Utils', () => {
+    const testData: TestData[] = [
+        { id: 1, name: 'Alice', age: 25, email: 'alice@test.com' },
+        { id: 2, name: 'Bob', age: 30, email: 'bob@test.com' },
+        { id: 3, name: 'Charlie', age: 35, email: 'charlie@test.com' },
+        { id: 4, name: 'David', age: 28, email: 'david@test.com' },
     ];
 
-    it('should apply select correctly', () => {
-        const options: SheetOptions<{ id: number }> = { select: ['id'] };
-        expect(applySelectLimitOffset(data, options)).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }]);
+    describe('applyWhere', () => {
+        it('should filter with simple equality', () => {
+            const result = applyWhere(testData, { name: { eq: 'Alice' } });
+            expect(result).toEqual([testData[0]]);
+        });
+
+        it('should filter with not equal', () => {
+            const result = applyWhere(testData, { name: { ne: 'Alice' } });
+            expect(result).toEqual([testData[1], testData[2], testData[3]]);
+        });
+
+        it('should filter with greater than', () => {
+            const result = applyWhere(testData, { age: { gt: 30 } });
+            expect(result).toEqual([testData[2]]);
+        });
+
+        it('should filter with less than or equal', () => {
+            const result = applyWhere(testData, { age: { lte: 28 } });
+            expect(result).toEqual([testData[0], testData[3]]);
+        });
+
+        it('should filter with contains', () => {
+            const result = applyWhere(testData, { email: { contains: 'bob' } });
+            expect(result).toEqual([testData[1]]);
+        });
+
+        it('should filter with startsWith', () => {
+            const result = applyWhere(testData, { name: { startsWith: 'B' } });
+            expect(result).toEqual([testData[1]]);
+        });
+
+        it('should filter with endsWith', () => {
+            const result = applyWhere(testData, { name: { endsWith: 'ie' } });
+            expect(result).toEqual([testData[2]]);
+        });
+
+        it('should filter with in array', () => {
+            const result = applyWhere(testData, { name: { in: ['Alice', 'Bob'] } });
+            expect(result).toEqual([testData[0], testData[1]]);
+        });
+
+        it('should filter with notIn array', () => {
+            const result = applyWhere(testData, { name: { notIn: ['Alice', 'Bob'] } });
+            expect(result).toEqual([testData[2], testData[3]]);
+        });
     });
 
-    it('should apply limit correctly', () => {
-        const options = { limit: 2 };
-        expect(applySelectLimitOffset(data, options)).toEqual([
-            { id: 1, name: 'Alice' },
-            { id: 2, name: 'Bob' },
-        ]);
+    describe('applyOrderBy', () => {
+        it('should sort by single field ascending', () => {
+            const result = applyOrderBy(testData, { key: 'age', order: 'asc' });
+            expect(result).toEqual([
+                testData[0], // Alice: 25
+                testData[3], // David: 28
+                testData[1], // Bob: 30
+                testData[2], // Charlie: 35
+            ]);
+        });
+
+        it('should sort by single field descending', () => {
+            const result = applyOrderBy(testData, { key: 'age', order: 'desc' });
+            expect(result).toEqual([
+                testData[2], // Charlie: 35
+                testData[1], // Bob: 30
+                testData[3], // David: 28
+                testData[0], // Alice: 25
+            ]);
+        });
+
+        it('should sort by multiple fields', () => {
+            const data = [...testData, { id: 5, name: 'Eve', age: 28, email: 'eve@test.com' }];
+            const result = applyOrderBy(data, [
+                { key: 'age', order: 'asc' },
+                { key: 'name', order: 'desc' },
+            ]);
+            expect(result[2].name).toBe('David'); // Among age 28, David should come before Bob
+        });
     });
 
-    it('should apply offset correctly', () => {
-        const options = { offset: 1 };
-        expect(applySelectLimitOffset(data, options)).toEqual([
-            { id: 2, name: 'Bob' },
-            { id: 3, name: 'Charlie' },
-        ]);
-    });
+    describe('applySelectLimitOffset', () => {
+        it('should select specific fields', () => {
+            const result = applySelectLimitOffset(testData, { select: ['name', 'age'] });
+            expect(result).toEqual([
+                { name: 'Alice', age: 25 },
+                { name: 'Bob', age: 30 },
+                { name: 'Charlie', age: 35 },
+                { name: 'David', age: 28 },
+            ]);
+        });
 
-    it('should apply select, limit, and offset together', () => {
-        const options: SheetOptions<{ id: number; name: string }> = {
-            select: ['name'],
-            limit: 1,
-            offset: 1,
-        };
-        expect(applySelectLimitOffset(data, options)).toEqual([{ name: 'Bob' }]);
+        it('should apply limit', () => {
+            const result = applySelectLimitOffset(testData, { limit: 2 });
+            expect(result).toEqual([testData[0], testData[1]]);
+        });
+
+        it('should apply offset', () => {
+            const result = applySelectLimitOffset(testData, { offset: 2 });
+            expect(result).toEqual([testData[2], testData[3]]);
+        });
+
+        it('should apply limit and offset together', () => {
+            const result = applySelectLimitOffset(testData, { limit: 1, offset: 1 });
+            expect(result).toEqual([testData[1]]);
+        });
+
+        it('should apply select, limit, and offset together', () => {
+            const result = applySelectLimitOffset(testData, {
+                select: ['name', 'age'],
+                limit: 2,
+                offset: 1,
+            });
+            expect(result).toEqual([
+                { name: 'Bob', age: 30 },
+                { name: 'Charlie', age: 35 },
+            ]);
+        });
     });
 });

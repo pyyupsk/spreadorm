@@ -6,6 +6,11 @@ import papaparse from 'papaparse';
 
 const { parse } = papaparse;
 
+type CacheOptions = {
+    duration?: number;
+    enabled?: boolean;
+};
+
 /**
  * SpreadORM class for interacting with Google Sheets as a simple ORM.
  * @template T The type of the data structure in the sheet.
@@ -14,6 +19,8 @@ export class SpreadORM<T> {
     private sheetId: string;
     private data: T[] | null = null;
     private lastFetchTime: number = 0;
+    private sheetVersion: string | null = null;
+    private cacheEnabled: boolean = true;
     private cacheDuration: number = 5 * 60 * 1000; // 5 minutes
     private parseOptions: ParseOptions;
 
@@ -21,13 +28,18 @@ export class SpreadORM<T> {
      * Creates a new SpreadORM instance.
      * @param {string} sheetId - The ID of the Google Sheet.
      * @param {Object} options - Configuration options
-     * @param {number} [options.cacheDuration] - Cache duration in milliseconds
+     * @param {CacheOptions} [options.cache] - Cache configuration options
+     * - enabled: Whether to enable caching (default: true)
+     * - duration: Cache duration in milliseconds (default: 5 minutes)
      * @param {ParseOptions} [options.parseOptions] - CSV parsing options
+     * - skipEmptyLines: Whether to skip empty lines (default: true)
+     * - transformHeader: Function to transform the header (default: trim whitespace)
+     * - delimiter: CSV delimiter (default: ',')
      */
     constructor(
         sheetId: string,
         options?: {
-            cacheDuration?: number;
+            cache?: CacheOptions;
             parseOptions?: ParseOptions;
         },
     ) {
@@ -35,11 +47,18 @@ export class SpreadORM<T> {
         if (typeof sheetId !== 'string') throw new ValidationError('Sheet ID must be a string');
 
         this.sheetId = sheetId;
-        if (options?.cacheDuration) {
-            if (typeof options.cacheDuration !== 'number' || options.cacheDuration < 0) {
-                throw new ValidationError('Cache duration must be a positive number');
+
+        // Cache configuration
+        if (options?.cache) {
+            if (options.cache.enabled !== undefined) {
+                this.cacheEnabled = options.cache.enabled;
             }
-            this.cacheDuration = options.cacheDuration;
+            if (options.cache.duration !== undefined) {
+                if (typeof options.cache.duration !== 'number' || options.cache.duration < 0) {
+                    throw new ValidationError('Cache duration must be a positive number');
+                }
+                this.cacheDuration = options.cache.duration;
+            }
         }
 
         this.parseOptions = {
@@ -49,9 +68,32 @@ export class SpreadORM<T> {
         };
     }
 
-    private async fetchData(): Promise<void> {
+    private async fetchSheetVersion(): Promise<string> {
+        const url = `https://docs.google.com/spreadsheets/d/${this.sheetId}/edit`;
+        try {
+            const response = await fetch(url, { method: 'HEAD' });
+            const lastModified = response.headers.get('last-modified');
+            return lastModified || Date.now().toString();
+        } catch (_error) {
+            console.warn('Failed to fetch sheet version, using timestamp as fallback');
+            return Date.now().toString();
+        }
+    }
+
+    private isCacheValid(): boolean {
+        if (!this.cacheEnabled || !this.data) return false;
         const now = Date.now();
-        if (this.data !== null && now - this.lastFetchTime < this.cacheDuration) return;
+        return now - this.lastFetchTime < this.cacheDuration;
+    }
+
+    private async fetchData(): Promise<void> {
+        if (this.isCacheValid()) return;
+
+        const newVersion = await this.fetchSheetVersion();
+        if (this.sheetVersion === newVersion && this.data !== null) {
+            this.lastFetchTime = Date.now();
+            return;
+        }
 
         const url = `https://docs.google.com/spreadsheets/d/${this.sheetId}/gviz/tq?tqx=out:csv`;
 
@@ -95,9 +137,11 @@ export class SpreadORM<T> {
             }
 
             this.data = cleanData;
-            this.lastFetchTime = now;
+            this.sheetVersion = newVersion;
+            this.lastFetchTime = Date.now();
         } catch (error) {
             this.data = null;
+            this.sheetVersion = null;
             if (error instanceof SpreadORMError) {
                 throw error;
             }
@@ -173,10 +217,43 @@ export class SpreadORM<T> {
     }
 
     /**
+     * Gets the current cache status
+     */
+    getCacheStatus(): {
+        enabled: boolean;
+        valid: boolean;
+        lastFetchTime: number | null;
+        version: string | null;
+    } {
+        return {
+            enabled: this.cacheEnabled,
+            valid: this.isCacheValid(),
+            lastFetchTime: this.lastFetchTime || null,
+            version: this.sheetVersion,
+        };
+    }
+
+    /**
+     * Updates cache settings
+     */
+    configureCaching(options: CacheOptions): void {
+        if (options.enabled !== undefined) {
+            this.cacheEnabled = options.enabled;
+        }
+        if (options.duration !== undefined) {
+            if (typeof options.duration !== 'number' || options.duration < 0) {
+                throw new ValidationError('Cache duration must be a positive number');
+            }
+            this.cacheDuration = options.duration;
+        }
+    }
+
+    /**
      * Resets the internal data cache, forcing a fresh fetch on the next operation.
      */
     async reset(): Promise<void> {
         this.data = null;
         this.lastFetchTime = 0;
+        this.sheetVersion = null;
     }
 }

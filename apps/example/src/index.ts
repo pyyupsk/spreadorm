@@ -20,7 +20,9 @@ interface SalesData {
 // Initialize SpreadORM with your Google Sheet ID
 const SHEET_ID = '1TwFj6sp-I14c49t8n8mSGD1QVv9_uCwMpzzN0s01iPE';
 const salesOrm = new SpreadORM<SalesData>(SHEET_ID, {
-    cacheDuration: 5 * 60 * 1000, // 5 minutes cache
+    cache: {
+        enabled: false,
+    },
     parseOptions: {
         skipEmptyLines: true,
         transformHeader: (header) => header.trim(),

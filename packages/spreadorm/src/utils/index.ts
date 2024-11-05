@@ -1,10 +1,32 @@
-import type { WhereOperators, OrderByClause, WhereClause } from '@/types';
+import type { WhereOperators, OrderByClause, WhereClause, SheetOptions } from '@/types';
+
+import { ValidationError } from '@/errors/SpreadORMError';
 
 /**
- * Applies the where clause to the data.
- * @param {T[]} data - The data to filter.
- * @param {WhereClause<T>} [where] - The where clause to apply.
- * @returns {T[]} The filtered data.
+ * Type guard to check if a value is a WhereOperators object
+ */
+function isWhereOperator<T>(value: unknown): value is WhereOperators<T> {
+    if (typeof value !== 'object' || value === null) return false;
+
+    const validKeys = [
+        'eq',
+        'ne',
+        'gt',
+        'gte',
+        'lt',
+        'lte',
+        'contains',
+        'startsWith',
+        'endsWith',
+        'in',
+        'notIn',
+    ];
+
+    return Object.keys(value as object).every((key) => validKeys.includes(key));
+}
+
+/**
+ * Applies the where clause to the data with improved type checking.
  */
 export function applyWhere<T>(data: T[], where?: WhereClause<T>): T[] {
     if (!where) return data;
@@ -13,7 +35,12 @@ export function applyWhere<T>(data: T[], where?: WhereClause<T>): T[] {
         Object.entries(where).every(([key, condition]) => {
             const rowValue = row[key as keyof T];
 
-            if (typeof condition === 'object' && condition !== null) {
+            // Validate the condition structure
+            if (condition === null) {
+                return rowValue === null;
+            }
+
+            if (isWhereOperator<T[keyof T]>(condition)) {
                 const {
                     eq,
                     ne,
@@ -26,43 +53,78 @@ export function applyWhere<T>(data: T[], where?: WhereClause<T>): T[] {
                     endsWith,
                     in: inArray,
                     notIn,
-                } = condition as WhereOperators<T>;
+                } = condition;
 
-                if (eq !== undefined && rowValue !== eq) return false;
-                if (ne !== undefined && rowValue === ne) return false;
-                if (gt !== undefined && gt !== null && rowValue <= gt) return false;
-                if (gte !== undefined && gte !== null && rowValue < gte) return false;
-                if (lt !== undefined && lt !== null && rowValue >= lt) return false;
-                if (lte !== undefined && lte !== null && rowValue > lte) return false;
+                // Type-safe comparisons
+                if (eq !== undefined) return rowValue === eq;
+                if (ne !== undefined) return rowValue !== ne;
 
-                if (contains !== undefined && typeof rowValue === 'string') {
-                    return rowValue.includes(contains);
+                // Numeric comparisons
+                if (typeof rowValue === 'number') {
+                    if (gt !== undefined && typeof gt === 'number') return rowValue > gt;
+                    if (gte !== undefined && typeof gte === 'number') return rowValue >= gte;
+                    if (lt !== undefined && typeof lt === 'number') return rowValue < lt;
+                    if (lte !== undefined && typeof lte === 'number') return rowValue <= lte;
                 }
-                if (startsWith !== undefined && typeof rowValue === 'string') {
-                    return rowValue.startsWith(startsWith);
+
+                // String operations
+                if (typeof rowValue === 'string') {
+                    if (contains !== undefined && typeof contains === 'string') {
+                        return rowValue.includes(contains);
+                    }
+                    if (startsWith !== undefined && typeof startsWith === 'string') {
+                        return rowValue.startsWith(startsWith);
+                    }
+                    if (endsWith !== undefined && typeof endsWith === 'string') {
+                        return rowValue.endsWith(endsWith);
+                    }
                 }
-                if (endsWith !== undefined && typeof rowValue === 'string') {
-                    return rowValue.endsWith(endsWith);
+
+                // Array operations
+                if (inArray !== undefined && Array.isArray(inArray)) {
+                    return inArray.includes(rowValue);
                 }
-                if (inArray !== undefined) {
-                    return (inArray as T[]).includes(rowValue as T);
+                if (notIn !== undefined && Array.isArray(notIn)) {
+                    return !notIn.includes(rowValue);
                 }
-                if (notIn !== undefined) {
-                    return !(notIn as T[]).includes(rowValue as T);
-                }
-            } else if (rowValue !== condition) {
-                return false;
+
+                return true;
             }
-            return true;
+
+            // Direct value comparison
+            return rowValue === condition;
         }),
     );
 }
 
 /**
- * Applies the order by clause to the data.
- * @param {T[]} data - The data to sort.
- * @param {OrderByClause<T>} [orderBy] - The order by clause to apply.
- * @returns {T[]} The sorted data.
+ * Safely compares two values for ordering
+ */
+function compareValues(a: unknown, b: unknown, order: 'asc' | 'desc'): number {
+    // Handle undefined/null values
+    if (a === undefined || a === null) return order === 'asc' ? 1 : -1;
+    if (b === undefined || b === null) return order === 'asc' ? -1 : 1;
+
+    // Handle different types
+    if (typeof a !== typeof b) {
+        return String(a).localeCompare(String(b)) * (order === 'asc' ? 1 : -1);
+    }
+
+    // Type-specific comparisons
+    if (typeof a === 'string' && typeof b === 'string') {
+        return a.localeCompare(b) * (order === 'asc' ? 1 : -1);
+    }
+
+    if (typeof a === 'number' && typeof b === 'number') {
+        return (a - b) * (order === 'asc' ? 1 : -1);
+    }
+
+    // Fallback to string comparison
+    return String(a).localeCompare(String(b)) * (order === 'asc' ? 1 : -1);
+}
+
+/**
+ * Applies the order by clause to the data with improved null handling.
  */
 export function applyOrderBy<T>(data: T[], orderBy?: OrderByClause<T> | OrderByClause<T>[]): T[] {
     if (!orderBy) return data;
@@ -74,38 +136,56 @@ export function applyOrderBy<T>(data: T[], orderBy?: OrderByClause<T> | OrderByC
             const aValue = a[key];
             const bValue = b[key];
 
-            if (aValue === bValue) continue;
-
-            if (order === 'asc') {
-                return aValue < bValue ? -1 : 1;
-            } else {
-                return aValue > bValue ? -1 : 1;
-            }
+            const comparison = compareValues(aValue, bValue, order);
+            if (comparison !== 0) return comparison;
         }
         return 0;
     });
 }
 
 /**
- * Applies the select, limit, and offset options to the data.
- * @param {T[]} data - The data to modify.
- * @param {SheetOptions<T>} [options] - The options to apply.
- * @returns {T[]} The modified data.
+ * Validates if a key exists in the data structure
  */
-export function applySelectLimitOffset<T>(
-    data: T[],
-    options?: { select?: (keyof T)[]; offset?: number; limit?: number },
-): T[] {
+function isValidKey<T>(data: T[], key: keyof T): boolean {
+    if (data.length === 0 || data[0] !== undefined || data[0] !== null) return true;
+    return key in Object(data[0]);
+}
+
+export function applySelectLimitOffset<T>(data: T[], options?: SheetOptions<T>): T[] {
     let result = data;
 
-    if (options?.offset) result = result.slice(options.offset);
-    if (options?.limit) result = result.slice(0, options.limit);
+    // Validate and apply offset
+    if (options?.offset !== undefined) {
+        if (typeof options.offset !== 'number' || options.offset < 0) {
+            throw new ValidationError('Offset must be a non-negative number');
+        }
+        result = result.slice(options.offset);
+    }
 
+    // Validate and apply limit
+    if (options?.limit !== undefined) {
+        if (typeof options.limit !== 'number' || options.limit < 0) {
+            throw new ValidationError('Limit must be a non-negative number');
+        }
+        result = result.slice(0, options.limit);
+    }
+
+    // Validate and apply select
     if (options?.select) {
-        const selectedKeys = options.select;
+        if (!Array.isArray(options.select)) {
+            throw new ValidationError('Select must be an array of keys');
+        }
+
+        // Validate all keys before processing
+        const invalidKeys = options.select.filter((key) => !isValidKey(data, key));
+        if (invalidKeys.length > 0) {
+            throw new ValidationError(`Invalid select keys: ${invalidKeys.join(', ')}`);
+        }
+
         return result.map((row) => {
             const newRow: Partial<T> = {};
-            for (const key of selectedKeys) {
+            if (!options?.select) return newRow as T;
+            for (const key of options.select) {
                 newRow[key] = row[key];
             }
             return newRow as T;

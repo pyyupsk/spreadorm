@@ -1,4 +1,5 @@
 import { applyWhere, applyOrderBy, applySelectLimitOffset } from '../spreadorm/src/utils';
+import { ValidationError } from '../spreadorm/src/errors/SpreadORMError';
 import { describe, it, expect } from 'vitest';
 
 type TestData = {
@@ -130,6 +131,78 @@ describe('SpreadORM Utils', () => {
                 { name: 'Bob', age: 30 },
                 { name: 'Charlie', age: 35 },
             ]);
+        });
+    });
+
+    describe('applySelectLimitOffset validation', () => {
+        it('should throw ValidationError for negative offset', () => {
+            expect(() => {
+                applySelectLimitOffset(testData, { offset: -1 });
+            }).toThrow(new ValidationError('Offset must be a non-negative number'));
+        });
+
+        it('should throw ValidationError for negative limit', () => {
+            expect(() => {
+                applySelectLimitOffset(testData, { limit: -1 });
+            }).toThrow(new ValidationError('Limit must be a non-negative number'));
+        });
+
+        it('should throw ValidationError for invalid select field', () => {
+            expect(() => {
+                applySelectLimitOffset(testData, {
+                    // @ts-expect-error
+                    select: ['invalid'],
+                });
+            }).toThrow(new ValidationError('Invalid select keys: invalid'));
+        });
+
+        it('should throw ValidationError for non-array select', () => {
+            expect(() => {
+                applySelectLimitOffset(testData, {
+                    // @ts-expect-error
+                    select: 'name',
+                });
+            }).toThrow(new ValidationError('Select must be an array of keys'));
+        });
+    });
+
+    describe('applyWhere with null values', () => {
+        const dataWithNull = [
+            ...testData,
+            { id: 5, name: 'Eve', age: null as unknown as number, email: 'eve@test.com' },
+        ];
+
+        it('should handle null equality', () => {
+            const result = applyWhere(dataWithNull, {
+                // @ts-expect-error
+                age: null,
+            });
+            expect(result).toHaveLength(1);
+            expect(result[0].name).toBe('Eve');
+        });
+
+        it('should handle numeric comparisons with null values', () => {
+            const result = applyWhere(dataWithNull, { age: { gt: 25 } });
+            expect(result).toHaveLength(3);
+            expect(result.every((r) => r.age > 25)).toBe(true);
+        });
+    });
+
+    describe('applyOrderBy with null values', () => {
+        const dataWithNull = [
+            ...testData,
+            { id: 5, name: 'Eve', age: null as unknown as number, email: 'eve@test.com' },
+        ];
+
+        it('should handle null values in ascending order', () => {
+            const result = applyOrderBy(dataWithNull, { key: 'age', order: 'asc' });
+            expect(result[result.length - 1].name).toBe('Charlie');
+        });
+
+        it('should handle null values in descending order', () => {
+            const result = applyOrderBy(dataWithNull, { key: 'age', order: 'desc' });
+            expect(result[0].name).toBe('Charlie');
+            expect(result[result.length - 1].name).toBe('Alice');
         });
     });
 });

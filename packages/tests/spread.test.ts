@@ -1,15 +1,17 @@
 import { SpreadORM } from 'spreadorm';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { FetchError, ValidationError } from '../spreadorm/src/errors/SpreadORMError';
 
 describe('SpreadORM', () => {
     const orm = new SpreadORM<{ id: number; name: string }>('dummy-sheet-id');
-    vi.spyOn(global, 'fetch').mockResolvedValue({
-        ok: true,
-        text: () => Promise.resolve('id,name\n1,Alice\n2,Bob'),
-        statusText: 'OK',
-    } as Response);
 
+    // Mock both fetch calls (one for version, one for data)
     beforeEach(() => {
+        vi.spyOn(global, 'fetch').mockResolvedValue({
+            ok: true,
+            text: () => Promise.resolve('id,name\n1,Alice\n2,Bob'),
+            statusText: 'OK',
+        } as Response);
         orm.reset();
     });
 
@@ -101,5 +103,85 @@ describe('SpreadORM', () => {
         await expect(invalidOrm.findMany({})).rejects.toThrow(
             'Failed to fetch spreadsheet: Not Found',
         );
+    });
+
+    // Add new tests for cache functionality
+    describe('caching', () => {
+        it('should configure cache settings', () => {
+            orm.configureCaching({ enabled: false });
+            const status = orm.getCacheStatus();
+            expect(status.enabled).toBe(false);
+        });
+
+        it('should throw error for invalid cache duration', () => {
+            expect(() => {
+                orm.configureCaching({ duration: -1 });
+            }).toThrow(new ValidationError('Cache duration must be a positive number'));
+        });
+
+        it('should return cache status', async () => {
+            await orm.findMany({});
+            const status = orm.getCacheStatus();
+            expect(status).toEqual({
+                enabled: false,
+                valid: false,
+                lastFetchTime: expect.any(Number),
+            });
+        });
+    });
+
+    // Add new tests for error handling
+    describe('error handling', () => {
+        it('should throw ValidationError for invalid sheet ID', () => {
+            expect(() => {
+                new SpreadORM('');
+            }).toThrow(new ValidationError('Sheet ID is required'));
+        });
+
+        it('should throw FetchError for network issues', async () => {
+            vi.spyOn(global, 'fetch').mockRejectedValueOnce(new Error('Network error'));
+            await expect(orm.findMany({})).rejects.toThrow(new FetchError('Network error'));
+        });
+
+        it('should throw ValidationError for invalid cache configuration', () => {
+            expect(() => {
+                new SpreadORM('valid-id', {
+                    cache: { duration: -1 },
+                });
+            }).toThrow(new ValidationError('Cache duration must be a positive number'));
+        });
+
+        it('should handle CSV parsing errors', async () => {
+            vi.spyOn(global, 'fetch').mockResolvedValueOnce({
+                ok: true,
+                text: () => Promise.resolve('invalid,csv,data\n1,2'),
+            } as Response);
+
+            await expect(orm.findMany({})).rejects.toThrow(
+                new ValidationError(
+                    'CSV parsing errors: Too few fields: expected 3 fields but parsed 2',
+                ),
+            );
+        });
+    });
+
+    // Add constructor tests
+    describe('constructor', () => {
+        it('should accept cache configuration', () => {
+            const customOrm = new SpreadORM('test-id', {
+                cache: {
+                    enabled: false,
+                    duration: 10000,
+                },
+            });
+            const status = customOrm.getCacheStatus();
+            expect(status.enabled).toBe(false);
+        });
+
+        it('should use default cache settings when not specified', () => {
+            const defaultOrm = new SpreadORM('test-id');
+            const status = defaultOrm.getCacheStatus();
+            expect(status.enabled).toBe(true);
+        });
     });
 });

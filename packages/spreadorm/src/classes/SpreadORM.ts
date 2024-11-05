@@ -1,7 +1,10 @@
 import type { SheetOptions, ParseOptions } from '@/types';
 
+import { FetchError, SpreadORMError, ValidationError } from '@/errors/SpreadORMError';
 import { applyWhere, applyOrderBy, applySelectLimitOffset } from '@/utils';
-import { parse } from 'papaparse';
+import papaparse from 'papaparse';
+
+const { parse } = papaparse;
 
 /**
  * SpreadORM class for interacting with Google Sheets as a simple ORM.
@@ -28,10 +31,16 @@ export class SpreadORM<T> {
             parseOptions?: ParseOptions;
         },
     ) {
-        if (!sheetId) throw new Error('Sheet ID is required');
+        if (!sheetId) throw new ValidationError('Sheet ID is required');
+        if (typeof sheetId !== 'string') throw new ValidationError('Sheet ID must be a string');
 
         this.sheetId = sheetId;
-        if (options?.cacheDuration) this.cacheDuration = options.cacheDuration;
+        if (options?.cacheDuration) {
+            if (typeof options.cacheDuration !== 'number' || options.cacheDuration < 0) {
+                throw new ValidationError('Cache duration must be a positive number');
+            }
+            this.cacheDuration = options.cacheDuration;
+        }
 
         this.parseOptions = {
             skipEmptyLines: true,
@@ -50,17 +59,23 @@ export class SpreadORM<T> {
             const response = await fetch(url);
 
             if (!response.ok) {
-                throw new Error(`Failed to fetch spreadsheet: ${response.statusText}`);
+                throw new FetchError(response.statusText, response.status);
             }
 
             const text = await response.text();
-            const { data } = parse(text, {
+            const { data, errors } = parse(text, {
                 header: true,
                 dynamicTyping: true,
                 skipEmptyLines: this.parseOptions.skipEmptyLines,
                 transformHeader: this.parseOptions.transformHeader,
                 delimiter: this.parseOptions.delimiter,
             });
+
+            if (errors.length > 0) {
+                throw new ValidationError(
+                    `CSV parsing errors: ${errors.map((e) => e.message).join(', ')}`,
+                );
+            }
 
             // Remove empty columns (columns with empty headers)
             const cleanData = data.map((row) => {
@@ -73,12 +88,20 @@ export class SpreadORM<T> {
                 return cleanRow;
             }) as T[];
 
+            if (cleanData.length === 0) {
+                console.warn('No data found in spreadsheet');
+                this.data = null;
+                return;
+            }
+
             this.data = cleanData;
             this.lastFetchTime = now;
         } catch (error) {
             this.data = null;
-            console.error('Error fetching spreadsheet:', error);
-            throw error;
+            if (error instanceof SpreadORMError) {
+                throw error;
+            }
+            throw new FetchError(error instanceof Error ? error.message : 'Unknown error occurred');
         }
     }
 
@@ -114,7 +137,7 @@ export class SpreadORM<T> {
     async findUnique(options?: SheetOptions<T>): Promise<Partial<T> | null> {
         const results = await this.findMany(options);
         if (results.length > 1) {
-            throw new Error('findUnique found multiple results');
+            throw new ValidationError('findUnique found multiple results');
         }
         return results[0] || null;
     }

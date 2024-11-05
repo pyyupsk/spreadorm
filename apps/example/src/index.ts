@@ -50,6 +50,7 @@ async function main() {
         // Example 1: Find all Electronics products
         printSection('Electronics Products');
         const electronics = await salesOrm.findMany({
+            select: ['ProductName', 'UnitPrice', 'Revenue', 'Category'],
             where: { Category: 'Electronics' },
         });
         console.table(

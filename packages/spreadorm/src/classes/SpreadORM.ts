@@ -1,8 +1,9 @@
-import type { SheetOptions, ParseOptions } from '@/types';
-
-import { FetchError, SpreadORMError, ValidationError } from '@/errors/SpreadORMError';
-import { applyWhere, applyOrderBy, applySelectLimitOffset } from '@/utils';
 import papaparse from 'papaparse';
+
+import type { SheetOptions, ParseOptions } from '../types';
+
+import { FetchError, SpreadORMError, ValidationError } from '../errors/SpreadORMError';
+import { applyWhere, applyOrderBy, applySelectLimitOffset } from '../utils';
 
 const { parse } = papaparse;
 
@@ -19,7 +20,6 @@ export class SpreadORM<T> {
     private sheetId: string;
     private data: T[] | null = null;
     private lastFetchTime: number = 0;
-    private sheetVersion: string | null = null;
     private cacheEnabled: boolean = true;
     private cacheDuration: number = 5 * 60 * 1000; // 5 minutes
     private parseOptions: ParseOptions;
@@ -68,18 +68,6 @@ export class SpreadORM<T> {
         };
     }
 
-    private async fetchSheetVersion(): Promise<string> {
-        const url = `https://docs.google.com/spreadsheets/d/${this.sheetId}/edit`;
-        try {
-            const response = await fetch(url, { method: 'HEAD' });
-            const lastModified = response.headers.get('last-modified');
-            return lastModified || Date.now().toString();
-        } catch (_error) {
-            console.warn('Failed to fetch sheet version, using timestamp as fallback');
-            return Date.now().toString();
-        }
-    }
-
     private isCacheValid(): boolean {
         if (!this.cacheEnabled || !this.data) return false;
         const now = Date.now();
@@ -89,8 +77,7 @@ export class SpreadORM<T> {
     private async fetchData(): Promise<void> {
         if (this.isCacheValid()) return;
 
-        const newVersion = await this.fetchSheetVersion();
-        if (this.sheetVersion === newVersion && this.data !== null) {
+        if (this.data !== null) {
             this.lastFetchTime = Date.now();
             return;
         }
@@ -137,11 +124,9 @@ export class SpreadORM<T> {
             }
 
             this.data = cleanData;
-            this.sheetVersion = newVersion;
             this.lastFetchTime = Date.now();
         } catch (error) {
             this.data = null;
-            this.sheetVersion = null;
             if (error instanceof SpreadORMError) {
                 throw error;
             }
@@ -223,13 +208,11 @@ export class SpreadORM<T> {
         enabled: boolean;
         valid: boolean;
         lastFetchTime: number | null;
-        version: string | null;
     } {
         return {
             enabled: this.cacheEnabled,
             valid: this.isCacheValid(),
             lastFetchTime: this.lastFetchTime || null,
-            version: this.sheetVersion,
         };
     }
 
@@ -254,6 +237,5 @@ export class SpreadORM<T> {
     async reset(): Promise<void> {
         this.data = null;
         this.lastFetchTime = 0;
-        this.sheetVersion = null;
     }
 }

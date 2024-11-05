@@ -6,10 +6,6 @@
         "outDir": "dist",
         "declaration": true,
         "lib": ["ESNext"],
-        "baseUrl": ".",
-        "paths": {
-            "@/*": ["src/*"]
-        },
         "target": "ESNext"
     },
     "include": ["src/**/*.ts", "tsup.config.ts"],

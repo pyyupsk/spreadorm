@@ -1,6 +1,6 @@
-import type { WhereOperators, OrderByClause, WhereClause, SheetOptions } from '@/types';
+import type { WhereOperators, OrderByClause, WhereClause, SheetOptions } from '../types';
 
-import { ValidationError } from '@/errors/SpreadORMError';
+import { ValidationError } from '../errors/SpreadORMError';
 
 /**
  * Type guard to check if a value is a WhereOperators object
@@ -35,11 +35,13 @@ export function applyWhere<T>(data: T[], where?: WhereClause<T>): T[] {
         Object.entries(where).every(([key, condition]) => {
             const rowValue = row[key as keyof T];
 
-            // Validate the condition structure
-            if (condition === null) {
-                return rowValue === null;
+            // Handle null values
+            if (rowValue === null) {
+                if (condition === null) return true;
+                return false;
             }
 
+            // Validate the condition structure
             if (isWhereOperator<T[keyof T]>(condition)) {
                 const {
                     eq,
@@ -131,7 +133,12 @@ export function applyOrderBy<T>(data: T[], orderBy?: OrderByClause<T> | OrderByC
 
     const orderByArray = Array.isArray(orderBy) ? orderBy : [orderBy];
 
-    return [...data].sort((a, b) => {
+    // Remove null values from data
+    const filteredData = data.filter((row) =>
+        Object.values(row as object).every((value) => value !== null),
+    );
+
+    return [...filteredData].sort((a, b) => {
         for (const { key, order } of orderByArray) {
             const aValue = a[key];
             const bValue = b[key];
@@ -147,8 +154,7 @@ export function applyOrderBy<T>(data: T[], orderBy?: OrderByClause<T> | OrderByC
  * Validates if a key exists in the data structure
  */
 function isValidKey<T>(data: T[], key: keyof T): boolean {
-    if (data.length === 0 || data[0] !== undefined || data[0] !== null) return true;
-    return key in Object(data[0]);
+    return Object.keys(data[0] as object).includes(key.toString());
 }
 
 export function applySelectLimitOffset<T>(data: T[], options?: SheetOptions<T>): T[] {

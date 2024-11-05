@@ -37,6 +37,35 @@ const sheetId = 'your-google-sheet-id';
 const orm = new SpreadORM<MyDataType>(sheetId);
 ```
 
+### Managing Cache
+
+**Enable/Disable Caching**:
+
+```typescript
+const orm = new SpreadORM<MyDataType>(sheetId, {
+  cache: {
+    enabled: true,
+    duration: 10 * 60 * 1000, // 10 minutes
+  },
+});
+
+// or
+
+orm.configureCaching({
+  enabled: true,
+  duration: 5 * 60 * 1000, // 10 minutes
+});
+```
+
+**Get Cache Status**:
+
+```typescript
+const status = orm.getCacheStatus();
+console.log(status.enabled); // true|false
+console.log(status.valid); // true|false
+console.log(status.lastFetchTime); // timestamp in milliseconds
+```
+
 ### Querying Data
 
 **Find multiple rows** based on certain conditions:
@@ -46,14 +75,6 @@ const users = await orm.findMany({
   where: { role: 'admin' },
   orderBy: { key: 'createdAt', order: 'asc' },
   limit: 10,
-});
-```
-
-**Find a unique row**:
-
-```typescript
-const user = await orm.findUnique({
-  where: { id: '123' },
 });
 ```
 
@@ -90,36 +111,6 @@ interface User {
 ## 📚 Documentation
 
 For detailed documentation and advanced usage examples, please visit our [SpreadORM Wiki](https://github.com/pyyupsk/spreadorm/wiki/SpreadORM-Wiki).
-
-## 📄 Methods Overview
-
-Here’s an overview of the primary methods available in SpreadORM:
-
-### `findMany(options?: SheetOptions<T>)`
-
-- Fetch multiple rows based on query options.
-- Supports filtering (`where`), ordering, pagination (`limit`, `offset`), and selecting specific columns.
-
-### `findUnique(options?: SheetOptions<T>)`
-
-- Retrieve a single unique row.
-- Throws an error if multiple results are found.
-
-### `findFirst(options?: SheetOptions<T>)`
-
-- Get the first row that matches the query options.
-
-### `findLast(options?: SheetOptions<T>)`
-
-- Fetch the last row that matches the query options.
-
-### `count(options?: SheetOptions<T>)`
-
-- Count the number of rows that match the query options.
-
-### `reset()`
-
-- Reset the internal cache.
 
 ## 🤝 Contributing
 

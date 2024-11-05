@@ -1,2 +1,2 @@
-export { SpreadORM } from './SpreadORM';
+export * from './classes';
 export * from './types';

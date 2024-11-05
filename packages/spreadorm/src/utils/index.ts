@@ -1,4 +1,4 @@
-import type { WhereClause, OrderByClause, WhereOperators } from './types';
+import type { WhereOperators, OrderByClause, WhereClause } from '@/types';
 
 /**
  * Applies the where clause to the data.

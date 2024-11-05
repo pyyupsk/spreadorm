@@ -1,8 +1,7 @@
+import type { SheetOptions, ParseOptions } from '@/types';
+
+import { applyWhere, applyOrderBy, applySelectLimitOffset } from '@/utils';
 import { parse } from 'papaparse';
-
-import type { SheetOptions, ParseOptions } from './types';
-
-import { applyWhere, applyOrderBy, applySelectLimitOffset } from './utils';
 
 /**
  * SpreadORM class for interacting with Google Sheets as a simple ORM.

@@ -1,4 +1,30 @@
-# example
+# spreadorm
+
+## 2.1.0
+
+### Dependencies
+
+- Updated dependencies to latest versions:
+  - papaparse: ^5.5.3
+  - @types/node: ^22.15.21
+  - @types/papaparse: ^5.3.16
+  - eslint: ^9.27.0
+  - tsup: ^8.5.0
+  - typescript: ^5.8.3
+
+### Improvements
+
+- Enhanced type safety with readonly modifiers
+- Improved error handling with nullish coalescing
+- Refactored where clause handling for better maintainability
+- Optimized comparison functions for better performance
+- Added stricter validation for cache duration (must be positive)
+
+### Fixes
+
+- Fixed potential type issues in where clause operators
+- Improved handling of null/undefined values in comparisons
+- Enhanced error message handling in fetch operations
 
 ## 2.0.0
 

@@ -83,7 +83,7 @@ async function main() {
         });
         const regionalSummary = northSouthSales.reduce(
             (acc, sale) => {
-                acc[sale.Region] = (acc[sale.Region] || 0) + sale.Revenue;
+                acc[sale.Region] = (acc[sale.Region] ?? 0) + sale.Revenue;
                 return acc;
             },
             {} as Record<string, number>,
@@ -132,9 +132,7 @@ async function calculateSalesStats() {
 
     // Calculate category summary
     allSales.forEach((sale) => {
-        if (!stats.categorySummary[sale.Category]) {
-            stats.categorySummary[sale.Category] = { count: 0, revenue: 0 };
-        }
+        stats.categorySummary[sale.Category] ??= { count: 0, revenue: 0 };
         stats.categorySummary[sale.Category]!.count++;
         stats.categorySummary[sale.Category]!.revenue += sale.Revenue;
     });

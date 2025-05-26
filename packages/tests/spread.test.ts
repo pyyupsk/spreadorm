@@ -1,9 +1,8 @@
 import { SpreadORM } from 'spreadorm';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { FetchError, ValidationError } from '../spreadorm/src/errors/SpreadORMError';
 
 describe('SpreadORM', () => {
-    const orm = new SpreadORM<{ id: number; name: string }>('dummy-sheet-id');
+    let orm = new SpreadORM<{ id: number; name: string }>('dummy-sheet-id');
 
     // Mock both fetch calls (one for version, one for data)
     beforeEach(() => {
@@ -134,7 +133,7 @@ describe('SpreadORM', () => {
     describe('error handling', () => {
         it('should throw ValidationError for invalid sheet ID', () => {
             expect(() => {
-                new SpreadORM('');
+                orm = new SpreadORM('');
             }).toThrow('Sheet ID is required');
         });
 
@@ -147,7 +146,7 @@ describe('SpreadORM', () => {
 
         it('should throw ValidationError for invalid cache configuration', () => {
             expect(() => {
-                new SpreadORM('valid-id', {
+                orm = new SpreadORM('valid-id', {
                     cache: { duration: -1 },
                 });
             }).toThrow('Cache duration must be a positive number');

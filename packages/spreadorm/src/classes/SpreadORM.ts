@@ -17,12 +17,13 @@ type CacheOptions = {
  * @template T The type of the data structure in the sheet.
  */
 export class SpreadORM<T> {
-    private sheetId: string;
+    private readonly sheetId: string;
+    private readonly parseOptions: ParseOptions;
+
     private data: T[] | null = null;
     private lastFetchTime: number = 0;
     private cacheEnabled: boolean = true;
     private cacheDuration: number = 5 * 60 * 1000; // 5 minutes
-    private parseOptions: ParseOptions;
 
     /**
      * Creates a new SpreadORM instance.
@@ -168,7 +169,7 @@ export class SpreadORM<T> {
         if (results.length > 1) {
             throw new ValidationError('findUnique found multiple results');
         }
-        return results[0] || null;
+        return results[0] ?? null;
     }
 
     /**
@@ -178,7 +179,7 @@ export class SpreadORM<T> {
      */
     async findFirst(options?: SheetOptions<T>): Promise<Partial<T> | null> {
         const results = await this.findMany(options);
-        return results[0] || null;
+        return results[0] ?? null;
     }
 
     /**
@@ -188,7 +189,7 @@ export class SpreadORM<T> {
      */
     async findLast(options?: SheetOptions<T>): Promise<Partial<T> | null> {
         const results = await this.findMany(options);
-        return results[results.length - 1] || null;
+        return results[results.length - 1] ?? null;
     }
 
     /**

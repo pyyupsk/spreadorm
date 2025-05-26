@@ -22,7 +22,7 @@ function isWhereOperator<T>(value: unknown): value is WhereOperators<T> {
         'notIn',
     ];
 
-    return Object.keys(value as object).every((key) => validKeys.includes(key));
+    return Object.keys(value).every((key) => validKeys.includes(key));
 }
 
 /**
@@ -131,8 +131,9 @@ function compareByType(a: unknown, b: unknown): number {
 function compareValues(a: unknown, b: unknown, order: 'asc' | 'desc'): number {
     if (a === undefined || a === null) return order === 'asc' ? 1 : -1;
     if (b === undefined || b === null) return order === 'asc' ? -1 : 1;
-    if (typeof a !== typeof b)
-        return String(a).localeCompare(String(b)) * (order === 'asc' ? 1 : -1);
+    if (typeof a !== typeof b) {
+        return compareByType(a, b) * (order === 'asc' ? 1 : -1);
+    }
 
     return compareByType(a, b) * (order === 'asc' ? 1 : -1);
 }

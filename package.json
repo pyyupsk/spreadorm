@@ -10,6 +10,7 @@
         "build": "turbo build",
         "format": "prettier --write . --list-different",
         "lint": "turbo lint",
+        "pretest": "turbo build --filter='spreadorm'",
         "release": "pnpm run changeset publish --filter='spreadorm'",
         "start": "turbo start",
         "test": "turbo test"

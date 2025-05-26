@@ -140,7 +140,9 @@ describe('SpreadORM', () => {
 
         it('should throw FetchError for network issues', async () => {
             vi.spyOn(global, 'fetch').mockRejectedValueOnce(new Error('Network error'));
-            await expect(orm.findMany({})).rejects.toThrow('Failed to fetch spreadsheet: Network error');
+            await expect(orm.findMany({})).rejects.toThrow(
+                'Failed to fetch spreadsheet: Network error',
+            );
         });
 
         it('should throw ValidationError for invalid cache configuration', () => {

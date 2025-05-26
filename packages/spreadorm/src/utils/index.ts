@@ -54,8 +54,12 @@ function handleStringOperators(value: string, condition: WhereOperators<string>)
  */
 function handleArrayOperators<T>(value: T, condition: WhereOperators<T>): boolean {
     const { in: inArray, notIn } = condition;
-    if (inArray !== undefined && Array.isArray(inArray)) return inArray.includes(value);
-    if (notIn !== undefined && Array.isArray(notIn)) return !notIn.includes(value);
+    if (inArray !== undefined && Array.isArray(inArray)) {
+        return inArray.includes(value);
+    }
+    if (notIn !== undefined && Array.isArray(notIn)) {
+        return !notIn.includes(value);
+    }
     return true;
 }
 
@@ -66,16 +70,22 @@ function handleWhereOperator<T>(
     rowValue: T[keyof T],
     condition: WhereOperators<T[keyof T]>,
 ): boolean {
-    const { eq, ne } = condition;
+    const { eq, ne, in: inArray, notIn } = condition;
 
     if (eq !== undefined) return rowValue === eq;
     if (ne !== undefined) return rowValue !== ne;
 
     if (typeof rowValue === 'number') {
+        if (inArray !== undefined || notIn !== undefined) {
+            return handleArrayOperators(rowValue, condition);
+        }
         return handleNumericOperators(rowValue as number, condition as WhereOperators<number>);
     }
 
     if (typeof rowValue === 'string') {
+        if (inArray !== undefined || notIn !== undefined) {
+            return handleArrayOperators(rowValue, condition);
+        }
         return handleStringOperators(rowValue as string, condition as WhereOperators<string>);
     }
 

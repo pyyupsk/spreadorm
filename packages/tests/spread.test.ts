@@ -116,7 +116,7 @@ describe('SpreadORM', () => {
         it('should throw error for invalid cache duration', () => {
             expect(() => {
                 orm.configureCaching({ duration: -1 });
-            }).toThrow(new ValidationError('Cache duration must be a positive number'));
+            }).toThrow('Cache duration must be a positive number');
         });
 
         it('should return cache status', async () => {
@@ -135,12 +135,12 @@ describe('SpreadORM', () => {
         it('should throw ValidationError for invalid sheet ID', () => {
             expect(() => {
                 new SpreadORM('');
-            }).toThrow(new ValidationError('Sheet ID is required'));
+            }).toThrow('Sheet ID is required');
         });
 
         it('should throw FetchError for network issues', async () => {
             vi.spyOn(global, 'fetch').mockRejectedValueOnce(new Error('Network error'));
-            await expect(orm.findMany({})).rejects.toThrow(new FetchError('Network error'));
+            await expect(orm.findMany({})).rejects.toThrow('Failed to fetch spreadsheet: Network error');
         });
 
         it('should throw ValidationError for invalid cache configuration', () => {
@@ -148,7 +148,7 @@ describe('SpreadORM', () => {
                 new SpreadORM('valid-id', {
                     cache: { duration: -1 },
                 });
-            }).toThrow(new ValidationError('Cache duration must be a positive number'));
+            }).toThrow('Cache duration must be a positive number');
         });
 
         it('should handle CSV parsing errors', async () => {
@@ -158,9 +158,7 @@ describe('SpreadORM', () => {
             } as Response);
 
             await expect(orm.findMany({})).rejects.toThrow(
-                new ValidationError(
-                    'CSV parsing errors: Too few fields: expected 3 fields but parsed 2',
-                ),
+                'CSV parsing errors: Too few fields: expected 3 fields but parsed 2',
             );
         });
     });

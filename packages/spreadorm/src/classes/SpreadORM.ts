@@ -54,7 +54,7 @@ export class SpreadORM<T> {
                 this.cacheEnabled = options.cache.enabled;
             }
             if (options.cache.duration !== undefined) {
-                if (typeof options.cache.duration !== 'number' || options.cache.duration < 0) {
+                if (typeof options.cache.duration !== 'number' || options.cache.duration <= 0) {
                     throw new ValidationError('Cache duration must be a positive number');
                 }
                 this.cacheDuration = options.cache.duration;
@@ -88,7 +88,7 @@ export class SpreadORM<T> {
             const response = await fetch(url);
 
             if (!response.ok) {
-                throw new FetchError(response.statusText, response.status);
+                throw new FetchError(response.statusText || 'Unknown error', response.status);
             }
 
             const text = await response.text();
@@ -224,7 +224,7 @@ export class SpreadORM<T> {
             this.cacheEnabled = options.enabled;
         }
         if (options.duration !== undefined) {
-            if (typeof options.duration !== 'number' || options.duration < 0) {
+            if (typeof options.duration !== 'number' || options.duration <= 0) {
                 throw new ValidationError('Cache duration must be a positive number');
             }
             this.cacheDuration = options.duration;

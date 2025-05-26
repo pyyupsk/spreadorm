@@ -132,9 +132,9 @@ async function calculateSalesStats() {
 
     // Calculate category summary
     allSales.forEach((sale) => {
-        stats.categorySummary[sale.Category] ??= { count: 0, revenue: 0 };
-        stats.categorySummary[sale.Category]!.count++;
-        stats.categorySummary[sale.Category]!.revenue += sale.Revenue;
+        const category = (stats.categorySummary[sale.Category] ??= { count: 0, revenue: 0 });
+        category.count++;
+        category.revenue += sale.Revenue;
     });
 
     return stats;

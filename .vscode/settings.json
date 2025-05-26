@@ -14,5 +14,9 @@
     "editor.trimAutoWhitespace": false,
     "files.insertFinalNewline": true,
     "files.eol": "\n",
-    "npm.packageManager": "pnpm"
+    "npm.packageManager": "pnpm",
+    "sonarlint.connectedMode.project": {
+        "connectionId": "pyyupsk",
+        "projectKey": "pyyupsk_spreadorm"
+    }
 }

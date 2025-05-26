@@ -89,7 +89,7 @@ export class SpreadORM<T> {
             const response = await fetch(url);
 
             if (!response.ok) {
-                throw new FetchError(response.statusText || 'Unknown error', response.status);
+                throw new FetchError(response.statusText ?? 'Unknown error', response.status);
             }
 
             const text = await response.text();

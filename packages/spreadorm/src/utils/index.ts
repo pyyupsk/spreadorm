@@ -26,49 +26,60 @@ function isWhereOperator<T>(value: unknown): value is WhereOperators<T> {
 }
 
 /**
+ * Handles numeric operators and returns a boolean
+ */
+function handleNumericOperators(value: number, condition: WhereOperators<number>): boolean {
+    const { gt, gte, lt, lte } = condition;
+    if (gt !== undefined && typeof gt === 'number') return value > gt;
+    if (gte !== undefined && typeof gte === 'number') return value >= gte;
+    if (lt !== undefined && typeof lt === 'number') return value < lt;
+    if (lte !== undefined && typeof lte === 'number') return value <= lte;
+    return true;
+}
+
+/**
+ * Handles string operators and returns a boolean
+ */
+function handleStringOperators(value: string, condition: WhereOperators<string>): boolean {
+    const { contains, startsWith, endsWith } = condition;
+    if (contains !== undefined && typeof contains === 'string') return value.includes(contains);
+    if (startsWith !== undefined && typeof startsWith === 'string')
+        return value.startsWith(startsWith);
+    if (endsWith !== undefined && typeof endsWith === 'string') return value.endsWith(endsWith);
+    return true;
+}
+
+/**
+ * Handles array operators and returns a boolean
+ */
+function handleArrayOperators<T>(value: T, condition: WhereOperators<T>): boolean {
+    const { in: inArray, notIn } = condition;
+    if (inArray !== undefined && Array.isArray(inArray)) return inArray.includes(value);
+    if (notIn !== undefined && Array.isArray(notIn)) return !notIn.includes(value);
+    return true;
+}
+
+/**
  * Handles a WhereOperators object and returns a boolean
  */
 function handleWhereOperator<T>(
     rowValue: T[keyof T],
     condition: WhereOperators<T[keyof T]>,
 ): boolean {
-    const {
-        eq,
-        ne,
-        gt,
-        gte,
-        lt,
-        lte,
-        contains,
-        startsWith,
-        endsWith,
-        in: inArray,
-        notIn,
-    } = condition;
+    const { eq, ne } = condition;
 
     if (eq !== undefined) return rowValue === eq;
     if (ne !== undefined) return rowValue !== ne;
 
     if (typeof rowValue === 'number') {
-        if (gt !== undefined && typeof gt === 'number') return rowValue > gt;
-        if (gte !== undefined && typeof gte === 'number') return rowValue >= gte;
-        if (lt !== undefined && typeof lt === 'number') return rowValue < lt;
-        if (lte !== undefined && typeof lte === 'number') return rowValue <= lte;
+        return handleNumericOperators(rowValue as number, condition as WhereOperators<number>);
     }
 
     if (typeof rowValue === 'string') {
-        if (contains !== undefined && typeof contains === 'string')
-            return rowValue.includes(contains);
-        if (startsWith !== undefined && typeof startsWith === 'string')
-            return rowValue.startsWith(startsWith);
-        if (endsWith !== undefined && typeof endsWith === 'string')
-            return rowValue.endsWith(endsWith);
+        return handleStringOperators(rowValue as string, condition as WhereOperators<string>);
     }
 
-    if (inArray !== undefined && Array.isArray(inArray)) return inArray.includes(rowValue);
-    if (notIn !== undefined && Array.isArray(notIn)) return !notIn.includes(rowValue);
-
-    return true;
+    return handleArrayOperators(rowValue, condition);
 }
 
 /**

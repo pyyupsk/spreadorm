@@ -9,16 +9,16 @@
         "start": "node --require dotenv/config dist/index.js"
     },
     "dependencies": {
-        "chalk": "^5.3.0",
-        "dotenv": "^16.4.5",
+        "chalk": "^5.4.1",
+        "dotenv": "^16.5.0",
         "spreadorm": "workspace:*"
     },
     "devDependencies": {
         "@repo/eslint-config": "workspace:*",
         "@repo/typescript-config": "workspace:*",
-        "@types/node": "^22.5.4",
-        "eslint": "^9.14.0",
-        "tsup": "^8.2.4",
-        "typescript": "^5.4.5"
+        "@types/node": "^22.15.21",
+        "eslint": "^9.27.0",
+        "tsup": "^8.5.0",
+        "typescript": "^5.8.3"
     }
 }

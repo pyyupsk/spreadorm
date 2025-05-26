@@ -2,7 +2,8 @@
 
 ![Version](https://img.shields.io/npm/v/spreadorm)
 ![License](https://img.shields.io/npm/l/spreadorm)
-![Downloads](https://img.shields.io/npm/dm/spreadorm)
+![Downloads](https://npm.fasu.dev/badge/downloads?q=spreadorm)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=pyyupsk_spreadorm&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=pyyupsk_spreadorm)
 
 Welcome to **SpreadORM**! 🎉 A lightweight **Object-Relational Mapper (ORM)** designed to interface with **Google Sheets** as if they were databases. This tool provides a simple yet powerful way to query, and manage filter in your Google Sheets using **TypeScript**. Perfect for developers who want an easy ORM for non-relational data.
 

@@ -8,6 +8,8 @@
         },
         "lint": {},
         "start": {},
-        "test": {}
+        "test": {
+            "cache": false
+        }
     }
 }
